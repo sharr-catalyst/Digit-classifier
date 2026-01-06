@@ -1,23 +1,24 @@
-import numpy as np 
-import pandas as pd 
 import os
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
+
+# Print all files in the input directory
 for dirname, _, filenames in os.walk('/kaggle/input'):
     for filename in filenames:
         print(os.path.join(dirname, filename))
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  
-
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 # Import TensorFlow with error handling
 try:
     import tensorflow as tf
     from tensorflow import keras
     from tensorflow.keras import layers
-    
-    # set GPU Memory
+
+    # Set GPU Memory
     gpus = tf.config.experimental.list_physical_devices('GPU')
     if gpus:
         try:
@@ -25,11 +26,12 @@ try:
                 tf.config.experimental.set_memory_growth(gpu, True)
         except RuntimeError as e:
             print(f"GPU configuration warning: {e}")
-    
+
     print(f"TensorFlow version: {tf.__version__}")
 except Exception as e:
     print(f"Error importing TensorFlow: {e}")
     exit(1)
+
 # Load the dataset
 print("\nLoading dataset...")
 try:
@@ -43,13 +45,18 @@ except FileNotFoundError:
 # Separate features and labels
 y = data['label'].values
 X = data.drop('label', axis=1).values
+
+# Normalize pixel values to 0-1 range
 X = X.astype('float32') / 255.0
+
+# Reshape to 28 x 28 images
 X = X.reshape(-1, 28, 28, 1)
 
 print(f"Input shape: {X.shape}")
 print(f"Labels shape: {y.shape}")
 print(f"Unique labels: {np.unique(y)}")
 
+# Split into training and validation sets
 X_train, X_val, y_train, y_val = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
@@ -80,7 +87,7 @@ model.summary()
 # Train the model
 print("\nTraining model...")
 try:
-   history = model.fit(
+    history = model.fit(
         X_train, y_train,
         epochs=5,
         batch_size=128,
@@ -147,7 +154,7 @@ for i in range(10):
     plt.imshow(sample_images[i].reshape(28, 28), cmap='gray')
     color = 'green' if sample_labels[i] == predicted_labels[i] else 'red'
     plt.title(f"True: {sample_labels[i]} | Pred: {predicted_labels[i]}\n"
-              f"Confidence: {confidence_scores[i]:.2%}", 
+              f"Confidence: {confidence_scores[i]:.2%}",
               color=color, fontsize=9)
     plt.axis('off')
 
@@ -160,65 +167,68 @@ print("\nSaving model...")
 try:
     model.save('mnist_digit_classifier.keras')  # Use .keras format (recommended)
     print("Model saved as 'mnist_digit_classifier.keras'")
-except:
+except Exception:
     model.save('mnist_digit_classifier.h5')  # Fallback to .h5 format
     print("Model saved as 'mnist_digit_classifier.h5'")
+
 # Print final summary
-print("\n" + "="*50)
+print("\n" + "=" * 50)
 print("TRAINING COMPLETE")
-print("="*50)
+print("=" * 50)
 print(f"Final Validation Accuracy: {test_accuracy * 100:.2f}%")
 print(f"Final Validation Loss: {test_loss:.4f}")
 print(f"Total Parameters: {model.count_params():,}")
-print("="*50)
+print("=" * 50)
 
 # Show plots
 plt.show()
-#TEST MODEL
-print("\n" + "="*50)
+
+# TEST MODEL
+print("\n" + "=" * 50)
 print("TESTING MODEL WITH TEST DATASET")
-print("="*50)
+print("=" * 50)
 
 try:
     print("\nLoading test dataset...")
     print("Download test.csv from: https://www.kaggle.com/datasets/oddrationale/mnist-in-csv")
-    
+
     test_data = pd.read_csv('mnist_test.csv')
     print(f"Test dataset loaded: {len(test_data)} samples")
-    
+
     # Check if test data has labels or not
     if 'label' in test_data.columns:
         # Test data with labels
         y_test = test_data['label'].values
-      X_test = test_data.drop('label', axis=1).values
+        X_test = test_data.drop('label', axis=1).values
         has_labels = True
     else:
         # Test data without labels (competition format)
         X_test = test_data.values
         has_labels = False
-    
+
     # Preprocess test data
     X_test = X_test.astype('float32') / 255.0
     X_test = X_test.reshape(-1, 28, 28, 1)
-    
     print(f"Test data shape: {X_test.shape}")
-    
+
     # Make predictions
     print("\nMaking predictions on test data...")
     test_predictions = model.predict(X_test, verbose=1)
     predicted_test_labels = np.argmax(test_predictions, axis=1)
-    
+
     if has_labels:
+        # Calculate test accuracy if labels are available
         test_acc = np.mean(predicted_test_labels == y_test)
         print(f"\nTest Accuracy: {test_acc * 100:.2f}%")
-        
-        #confusion matrix
+
+        # Show confusion matrix
         from sklearn.metrics import confusion_matrix, classification_report
         import seaborn as sns
-      cm = confusion_matrix(y_test, predicted_test_labels)
-        
+
+        cm = confusion_matrix(y_test, predicted_test_labels)
+
         plt.figure(figsize=(10, 8))
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                     xticklabels=range(10), yticklabels=range(10))
         plt.title('Confusion Matrix - Test Data')
         plt.ylabel('True Label')
@@ -226,23 +236,24 @@ try:
         plt.tight_layout()
         plt.savefig('confusion_matrix.png', dpi=150)
         print("Confusion matrix saved as 'confusion_matrix.png'")
-        
+
         print("\nClassification Report:")
-        print(classification_report(y_test, predicted_test_labels, 
+        print(classification_report(y_test, predicted_test_labels,
                                     target_names=[str(i) for i in range(10)]))
-        
+
         # Visualize some test predictions
         plt.figure(figsize=(15, 6))
         sample_test_indices = np.random.choice(len(X_test), 15, replace=False)
-        
+
         for i, idx in enumerate(sample_test_indices):
             plt.subplot(3, 5, i + 1)
             plt.imshow(X_test[idx].reshape(28, 28), cmap='gray')
             color = 'green' if y_test[idx] == predicted_test_labels[idx] else 'red'
-            plt.title(f"True: {y_test[idx]} | Pred: {predicted_test_labels[idx]}", 
-                     color=color, fontsize=8)
+            plt.title(f"True: {y_test[idx]} | Pred: {predicted_test_labels[idx]}",
+                      color=color, fontsize=8)
             plt.axis('off')
-          plt.suptitle('Test Set Predictions', fontsize=14, y=1.02)
+
+        plt.suptitle('Test Set Predictions', fontsize=14, y=1.02)
         plt.tight_layout()
         plt.savefig('test_predictions.png', dpi=150)
         print("Test predictions saved as 'test_predictions.png'")
@@ -256,29 +267,29 @@ try:
         })
         submission.to_csv('predictions.csv', index=False)
         print("Predictions saved as 'predictions.csv'")
-        
+
         # Visualize random test predictions
         plt.figure(figsize=(15, 6))
         sample_test_indices = np.random.choice(len(X_test), 15, replace=False)
-        
+
         for i, idx in enumerate(sample_test_indices):
             plt.subplot(3, 5, i + 1)
             plt.imshow(X_test[idx].reshape(28, 28), cmap='gray')
             confidence = test_predictions[idx][predicted_test_labels[idx]]
             plt.title(f"Pred: {predicted_test_labels[idx]}\n"
-                     f"Conf: {confidence:.2%}", fontsize=8)
+                      f"Conf: {confidence:.2%}", fontsize=8)
             plt.axis('off')
-        
+
         plt.suptitle('Test Set Predictions (No Labels)', fontsize=14, y=1.02)
         plt.tight_layout()
         plt.savefig('test_predictions.png', dpi=150)
         print("Test predictions saved as 'test_predictions.png'")
         plt.show()
-    
-    print("\n" + "="*50)
+
+    print("\n" + "=" * 50)
     print("TESTING COMPLETE")
-    print("="*50)
-    
+    print("=" * 50)
+
 except FileNotFoundError:
     print("\ntest.csv not found!")
     print("Download it from: https://www.kaggle.com/datasets/oddrationale/mnist-in-csv")
@@ -286,4 +297,3 @@ except FileNotFoundError:
 except Exception as e:
     print(f"\nError during testing: {e}")
     print("Make sure test.csv is properly formatted.")
-
