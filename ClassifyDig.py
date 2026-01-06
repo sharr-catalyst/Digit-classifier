@@ -45,18 +45,13 @@ except FileNotFoundError:
 # Separate features and labels
 y = data['label'].values
 X = data.drop('label', axis=1).values
-
-# Normalize pixel values to 0-1 range
 X = X.astype('float32') / 255.0
-
-# Reshape to 28 x 28 images
 X = X.reshape(-1, 28, 28, 1)
 
 print(f"Input shape: {X.shape}")
 print(f"Labels shape: {y.shape}")
 print(f"Unique labels: {np.unique(y)}")
 
-# Split into training and validation sets
 X_train, X_val, y_train, y_val = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
@@ -216,11 +211,10 @@ try:
     predicted_test_labels = np.argmax(test_predictions, axis=1)
     
     if has_labels:
-        # Calculate test accuracy if labels are available
         test_acc = np.mean(predicted_test_labels == y_test)
         print(f"\nTest Accuracy: {test_acc * 100:.2f}%")
         
-        # Show confusion matrix
+        #confusion matrix
         from sklearn.metrics import confusion_matrix, classification_report
         import seaborn as sns
       cm = confusion_matrix(y_test, predicted_test_labels)
