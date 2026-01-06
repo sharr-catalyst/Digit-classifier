@@ -1,17 +1,15 @@
 import numpy as np 
 import pandas as pd 
 import os
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 for dirname, _, filenames in os.walk('/kaggle/input'):
     for filename in filenames:
         print(os.path.join(dirname, filename))
-import os
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
 
 # Import TensorFlow with error handling
 try:
